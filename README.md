@@ -1,6 +1,8 @@
 # Yet Another Nes Emulator
 
-20260228 NES.c
+## Journal of architectural try-outs
+
+### 20260228 `NES.c`
 * Refresher on C lib stdint.h 
   * Discovered IBM i docs on [stdint.h](https://www.ibm.com/docs/en/i/7.6.0?topic=files-stdinth).
 * Representing all CPU regs w/in one variable, `uint64_t regs`.
@@ -42,11 +44,28 @@
     * Many more masks were needed of course.
   * Attempted to write a setter of Carry bit of P which decides by ternary on regular int 1-or-0 param to set or reset Carry bit.
     * For setting the Carry, the formula was `regs | BYTE1`.
-    * For other P bits, `regs | (BYTE1 * value)`
     * For resetting the Carry `regs & MASK1`
-    * For setting X, Y, S, and PC `regs | (BYTE<#> * value)`
-    * THESE OR FORMULA SETTERS would have mistakenly SUMMED existing register value and desired register value up to the max 1-byte value of 255.
+    * As for the setters I didn't get around to;
+      * for the other P bits, would have been `regs | (BYTE1 * value)`, and
+      * for setting X, Y, S, and PC, would have been `regs | (BYTE<#> * value)`.
+    * ALL THESE OR FORMULA SETTERS would have mistakenly SUMMED existing register value and desired register value up to the max 1-byte value of 255.
   * So this is all UNNECESSARILY COMPLICATED when you could just have individual `uint8_t` values for each registers and just use `return` to get them and assignment to set them.
-  
+* Distracted away from C attempt by curiosity of how much I could do the JavaScript equivalent.
 
+### 20260228 `NES.js`
+* Bus values same as `NES.c` but also wrapped in obj lit
+* Memory is 65536-byte ArrayBuffer
+* Started out w/ polynomial-encoded register values in a `bigint` but changed mind.
+* Each CPU register is an individual JS regular `number` wrapped in object literal `regs`
+  * Bitwise `|` with a power of 2 in this case properly sets single bits.
+  * Defined 2 of the simplest instructions, `SEI` and `CLI`
+* Like `NES.c` it's going to be 1:1 opcodes:functions
+  * Every addressing mode of an instruction gets its own function
+  * This time defining instruction of a given addressing mode in order of increasing opcode
+    * So wrote out do-nothing arrow functions as placeholders for `BRK`, `ORA (zp,X)`,
+    * but then skipped ahead and wrote another placeholder for `ORA abs`,
+    * and skipped again to fully define `SEI`, `CLI` and `ADC #` which directly modify members of `regs` by assignment of expression result.
+* Last progress for this attempt was to start an array `ops` holding references to `BRK` and `ORA (zp,X)` functions, in that order as 1st 2 elements, for proper opcode order.
+  * For now first `BRK` then `ORA (zp,X)` and then a couple placeholder nulls in `ops`.
+  * The idea is that we can go straight from opcode byte value to instruction execution via `ops[opcode(memvalue)]`.
 
